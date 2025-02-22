@@ -1,13 +1,14 @@
 # ======================================================================= #
-#  Copyright (C) 2020 - 2024 Dominik Willner <th33xitus@gmail.com>        #
+#  Copyright (C) 2020 - 2025 Dominik Willner <th33xitus@gmail.com>        #
 #                                                                         #
 #  This file is part of KIAUH - Klipper Installation And Update Helper    #
 #  https://github.com/dw-0/kiauh                                          #
 #                                                                         #
 #  This file may be distributed under the terms of the GNU GPLv3 license  #
 # ======================================================================= #
-
+import json
 import shutil
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from components.moonraker import (
@@ -138,3 +139,12 @@ def backup_moonraker_db_dir() -> None:
         bm.backup_directory(
             name, source=instance.db_dir, target=MOONRAKER_DB_BACKUP_DIR
         )
+
+def load_sysdeps_json(file: Path) -> Dict[str, List[str]]:
+    try:
+        sysdeps: Dict[str, List[str]] = json.loads(file.read_bytes())
+    except json.JSONDecodeError as e:
+        Logger.print_error(f"Unable to parse {file.name}:\n{e}")
+        return {}
+    else:
+        return sysdeps

@@ -1,5 +1,5 @@
 # ======================================================================= #
-#  Copyright (C) 2020 - 2024 Dominik Willner <th33xitus@gmail.com>        #
+#  Copyright (C) 2020 - 2025 Dominik Willner <th33xitus@gmail.com>        #
 #                                                                         #
 #  This file is part of KIAUH - Klipper Installation And Update Helper    #
 #  https://github.com/dw-0/kiauh                                          #
@@ -8,7 +8,6 @@
 # ======================================================================= #
 from __future__ import annotations
 
-import json
 import subprocess
 from typing import List
 
@@ -28,9 +27,11 @@ from components.moonraker import (
 )
 from components.moonraker.moonraker import Moonraker
 from components.moonraker.moonraker_dialogs import print_moonraker_overview
-from components.moonraker.moonraker_utils import (
+from components.moonraker.utils.sysdeps_parser import SysDepsParser
+from components.moonraker.utils.utils import (
     backup_moonraker_dir,
     create_example_moonraker_conf,
+    load_sysdeps_json,
 )
 from components.webui_client.client_utils import (
     enable_mainsail_remotemode,
@@ -154,16 +155,24 @@ def setup_moonraker_prerequesites() -> None:
 
 
 def install_moonraker_packages() -> None:
-    moonraker_deps = []
+    Logger.print_status("Parsing Moonraker system dependencies  ...")
 
+    moonraker_deps = []
     if MOONRAKER_DEPS_JSON_FILE.exists():
-        with open(MOONRAKER_DEPS_JSON_FILE, "r") as deps:
-            moonraker_deps = json.load(deps).get("debian", [])
+        Logger.print_info(
+            f"Parsing system dependencies from {MOONRAKER_DEPS_JSON_FILE.name} ...")
+        parser = SysDepsParser()
+        sysdeps = load_sysdeps_json(MOONRAKER_DEPS_JSON_FILE)
+        moonraker_deps.extend(parser.parse_dependencies(sysdeps))
+
     elif MOONRAKER_INSTALL_SCRIPT.exists():
+        Logger.print_warn(f"{MOONRAKER_DEPS_JSON_FILE.name} not found!")
+        Logger.print_info(
+            f"Parsing system dependencies from {MOONRAKER_INSTALL_SCRIPT.name} ...")
         moonraker_deps = parse_packages_from_file(MOONRAKER_INSTALL_SCRIPT)
 
     if not moonraker_deps:
-        raise ValueError("Error reading Moonraker dependencies!")
+        raise ValueError("Error parsing Moonraker dependencies!")
 
     check_install_dependencies({*moonraker_deps})
 
